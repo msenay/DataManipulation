@@ -1,0 +1,6 @@
+user_id,product_category,amount,currency,ts
+user123,electronics,299.99,USD,2025-01-01T10:00:00Z
+user456,books,19.99,EUR,2025-01-01T11:00:00Z
+user789,clothing,89.50,USD,2025-01-01T12:00:00Z
+user123,electronics,499.99,USD,2025-01-01T13:00:00Z
+user456,home,129.99,GBP,2025-01-01T14:00:00Z
