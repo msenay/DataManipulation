@@ -1,0 +1,9 @@
+# Development dependencies (includes everything from requirements.txt)
+-r requirements.txt
+
+# Additional development tools
+black==24.10.0
+isort==5.13.2
+flake8==7.1.1
+pytest-cov==6.0.0
+mypy==1.13.0
