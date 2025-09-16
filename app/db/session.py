@@ -1,6 +1,5 @@
 """Database session management."""
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import StaticPool
 
 from app.config import settings
 from app.logging import get_logger
@@ -11,9 +10,6 @@ logger = get_logger(__name__)
 engine = create_async_engine(
     settings.database_url,
     echo=settings.debug,
-    # For SQLite, we need special configuration
-    poolclass=StaticPool if settings.is_sqlite else None,
-    connect_args={"check_same_thread": False} if settings.is_sqlite else {},
 )
 
 # Create async session maker

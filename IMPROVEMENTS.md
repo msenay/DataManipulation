@@ -24,7 +24,7 @@ This document outlines the additional improvements made to enhance the FastAPI m
 - **Import Idempotency**: Clear documentation that imports are NOT idempotent
 
 ### 4. Database Improvements
-- **UUID Format Validation**: Added CHECK constraints for SQLite to enforce RFC-4122 format
+- **UUID Format Validation**: PostgreSQL natively handles UUID validation and format enforcement
 - **Normalized Storage**: Ensures all UUIDs stored in lowercase format
 - **Enhanced Indexing**: Optimized for tenant-scoped queries
 

@@ -19,9 +19,11 @@ A production-ready FastAPI application with comprehensive multi-tenancy support 
 ### Prerequisites
 
 - Python 3.11+
-- SQLite (default) or PostgreSQL
+- PostgreSQL 12+
 
 ### Installation
+
+#### Option 1: Using pip (Recommended)
 
 ```bash
 # Clone the repository
@@ -38,8 +40,76 @@ pip install -r requirements.txt
 # Copy environment configuration
 cp .env.example .env
 
+# Set up PostgreSQL database (see Database Setup section)
+
 # Run the application
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+#### Option 2: Using Poetry
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd fastapi-tenant-app
+
+# Install Poetry (if not already installed)
+curl -sSL https://install.python-poetry.org | python3 -
+
+# Install dependencies
+poetry install
+
+# Activate virtual environment
+poetry shell
+
+# Copy environment configuration
+cp .env.example .env
+
+# Set up PostgreSQL database (see Database Setup section)
+
+# Run the application
+poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Quick Test
+
+Once the application is running, you can quickly test all endpoints:
+
+```bash
+# Run the comprehensive test script
+python assignment_test_requests.py
+```
+
+This will test all endpoints and provide a summary report.
+
+### Database Setup
+
+#### PostgreSQL Installation
+
+```bash
+# Ubuntu/Debian
+sudo apt update && sudo apt install -y postgresql postgresql-contrib
+
+# macOS (using Homebrew)
+brew install postgresql
+brew services start postgresql
+
+# Windows
+# Download and install from https://www.postgresql.org/download/windows/
+```
+
+#### Database Configuration
+
+```bash
+# Create database user and databases
+sudo -u postgres psql -c "CREATE USER app_user WITH PASSWORD 'app_password';"
+sudo -u postgres psql -c "CREATE DATABASE tenant_app OWNER app_user;"
+sudo -u postgres psql -c "CREATE DATABASE test_tenant_app OWNER app_user;"
+sudo -u postgres psql -c "ALTER USER app_user CREATEDB;"
+
+# Create UUID extension (required for UUID support)
+sudo -u postgres psql -d tenant_app -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
+sudo -u postgres psql -d test_tenant_app -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
 ```
 
 ### Using Make (Optional)
@@ -52,22 +122,45 @@ make test     # Run tests
 
 ## Environment Configuration
 
-Create a `.env` file with the following variables:
+Create a `.env` file from the example template:
+
+```bash
+cp .env.example .env
+```
+
+The `.env.example` file contains all available configuration options:
 
 ```env
-# Database Configuration
-DATABASE_URL=sqlite+aiosqlite:///./dev.db
-# For PostgreSQL: DATABASE_URL=postgresql+psycopg://user:password@localhost/dbname
+# FastAPI Tenant App Environment Configuration
+# Copy this file to .env and customize for your environment
 
-# Application Settings
-DEBUG=true
+# Database Configuration
+DATABASE_URL=postgresql+psycopg://app_user:app_password@localhost:5432/tenant_app
+
+# Application Configuration
+DEBUG=false
 LOG_LEVEL=INFO
+
+# Docker PostgreSQL Configuration (when using docker-compose)
+POSTGRES_DB=tenant_app
+POSTGRES_USER=app_user
+POSTGRES_PASSWORD=app_password
+
+# Application Port
+APP_PORT=8000
+
+# Optional: Redis Configuration (for future caching features)
+REDIS_PASSWORD=your_redis_password_here
+
+# Optional: SSL Configuration (for production)
+SSL_CERT_PATH=./ssl/cert.pem
+SSL_KEY_PATH=./ssl/key.pem
 ```
 
 ### Database URL Notes
 
-- **SQLite**: `sqlite+aiosqlite:///./dev.db` (default, file-based)
 - **PostgreSQL**: `postgresql+psycopg://user:password@localhost:5432/dbname`
+- **Note**: SQLite is no longer supported - PostgreSQL is required
 
 ## Multi-Tenancy Strategy
 
@@ -87,7 +180,6 @@ This application implements a comprehensive multi-tenancy strategy:
 - **Canonical Format**: All UUIDs are normalized to **lowercase RFC-4122 format**
 - **Input Processing**: Mixed case UUIDs in headers are automatically converted to lowercase
 - **Storage**: Database stores UUIDs in normalized lowercase format
-  - SQLite: Stored as TEXT in lowercase (with CHECK constraints for format validation)
   - PostgreSQL: Uses native UUID type (automatically normalized)
 - **Output**: All API responses return UUIDs in lowercase format
 - **Example**: `123E4567-E89B-12D3-A456-426614174000` → `123e4567-e89b-12d3-a456-426614174000`
@@ -394,44 +486,112 @@ For validation errors:
 ### Project Structure
 
 ```
-app/
-├── api/
-│   ├── deps.py              # Dependencies (tenant validation)
-│   └── routers/             # API route handlers
-├── db/
-│   ├── models.py            # SQLAlchemy models
-│   ├── session.py           # Database session management
-│   └── tenancy.py           # Tenant context management
-├── middleware/
-│   ├── exceptions.py        # Global exception handlers
-│   └── logging.py           # Request logging middleware
-├── schemas/
-│   ├── transactions.py      # Pydantic schemas
-│   └── metrics.py           # Analytics schemas
-├── services/
-│   ├── transactions.py      # Business logic
-│   └── metrics.py           # Analytics logic
-├── utils/
-│   └── csv_ingest.py        # Import utilities
-├── config.py                # Configuration management
-├── logging.py               # Structured logging setup
-└── main.py                  # FastAPI application
+├── app/                              # Main application package
+│   ├── api/                         # API layer
+│   │   ├── deps.py                  # Dependencies (tenant validation)
+│   │   └── routers/                 # API route handlers
+│   │       ├── health.py            # Health check endpoint
+│   │       ├── me.py                # Tenant info endpoint
+│   │       ├── transactions.py      # Transaction CRUD endpoints
+│   │       ├── import_transactions.py # Data import endpoints
+│   │       └── metrics.py           # Analytics endpoints
+│   ├── db/                          # Database layer
+│   │   ├── models.py                # SQLAlchemy models
+│   │   ├── session.py               # Database session management
+│   │   ├── tenancy.py               # Tenant context management
+│   │   ├── tenant_filter.py         # Automatic tenant filtering
+│   │   ├── init_db.py               # Database initialization
+│   │   └── base.py                  # SQLAlchemy base configuration
+│   ├── middleware/                  # Custom middleware
+│   │   ├── exceptions.py            # Global exception handlers
+│   │   └── logging.py               # Request logging middleware
+│   ├── schemas/                     # Pydantic schemas
+│   │   ├── transactions.py          # Transaction schemas
+│   │   └── metrics.py               # Analytics schemas
+│   ├── services/                    # Business logic layer
+│   │   ├── transactions.py          # Transaction business logic
+│   │   └── metrics.py               # Analytics business logic
+│   ├── utils/                       # Utility functions
+│   │   └── csv_ingest.py            # Import utilities
+│   ├── config.py                    # Configuration management
+│   ├── logging.py                   # Structured logging setup
+│   └── main.py                      # FastAPI application
+├── tests/                           # Test suite
+│   ├── conftest.py                  # Test configuration
+│   ├── data/                        # Test data files
+│   └── test_*.py                    # Test modules
+├── assignment_test_requests.py      # Comprehensive endpoint testing script
+├── docker-compose.yml               # Docker services configuration
+├── Dockerfile                       # Application container definition
+├── .env.example                     # Environment configuration template
+├── requirements.txt                 # Python dependencies
+├── pyproject.toml                   # Poetry configuration
+└── README.md                        # This file
 ```
 
 ### Running Tests
 
+#### Unit Tests
+
 ```bash
-# Install test dependencies
+# Install test dependencies (if not already installed)
 pip install -r requirements.txt
 
-# Run all tests
+# Run all unit tests
 pytest
+
+# Run with verbose output
+pytest -v
 
 # Run with coverage
 pytest --cov=app
 
 # Run specific test file
 pytest tests/test_transactions.py -v
+
+# Run tests with short traceback
+pytest --tb=short
+```
+
+#### Integration/Endpoint Tests
+
+The project includes a comprehensive endpoint testing script that tests all API endpoints:
+
+```bash
+# Make sure the application is running
+uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+
+# Run the comprehensive endpoint test script
+python assignment_test_requests.py
+```
+
+The script tests:
+- ✅ All CRUD operations (Create, Read, Update, Delete)
+- ✅ Transaction import (CSV and JSON)
+- ✅ All metrics endpoints
+- ✅ Tenant isolation
+- ✅ Error handling (missing headers, invalid data, etc.)
+- ✅ Security validation
+
+Results are saved to `test_results.json` with detailed timing and response information.
+
+**Understanding Test Results:**
+- ✅ **Success**: HTTP status codes 200-299
+- ❌ **"Failed"**: May include expected error responses (400, 404, 422)
+  - Missing tenant header returning 400 is **correct behavior**
+  - Invalid UUIDs returning 422 is **correct behavior**  
+  - Non-existent resources returning 404 is **correct behavior**
+- The script tests both positive and negative scenarios
+- Check the detailed JSON output for full response analysis
+
+#### Docker-based Testing
+
+```bash
+# Run tests in Docker environment
+docker-compose up -d
+sleep 10  # Wait for services to be ready
+python assignment_test_requests.py
+docker-compose down
 ```
 
 ### Code Quality
@@ -471,19 +631,19 @@ docker-compose down
 
 ```bash
 # Copy environment template
-cp .env.docker .env
+cp .env.example .env
 
 # Edit .env with your production values
 nano .env
 
-# Start production services
-docker-compose -f docker-compose.prod.yml up -d
+# Start services
+docker-compose up -d
 
 # View logs
-docker-compose -f docker-compose.prod.yml logs -f
+docker-compose logs -f app
 
 # Stop services
-docker-compose -f docker-compose.prod.yml down
+docker-compose down
 ```
 
 ### Using Docker Only
@@ -492,7 +652,7 @@ docker-compose -f docker-compose.prod.yml down
 # Build image
 docker build -t fastapi-tenant-app .
 
-# Run with SQLite (development)
+# Run with PostgreSQL (development)
 docker run -p 8000:8000 fastapi-tenant-app
 
 # Run with PostgreSQL (production)
@@ -516,7 +676,6 @@ The Docker Compose setup includes:
 - **app**: FastAPI application server
 - **db**: PostgreSQL 15 database with health checks
 - **redis**: Redis cache (for future features like session storage)
-- **nginx**: Reverse proxy with rate limiting (production only)
 
 ### Docker Configuration
 
@@ -583,12 +742,22 @@ Once the server is running, visit:
 - **ReDoc documentation**: http://localhost:8000/redoc
 - **OpenAPI JSON**: http://localhost:8000/openapi.json
 
+## Recent Updates
+
+This application has been updated to:
+- ✅ **PostgreSQL-only**: Removed all SQLite dependencies for production readiness
+- ✅ **Unified Environment**: Single `.env.example` file for all configuration
+- ✅ **Comprehensive Testing**: 55 unit tests + endpoint integration tests
+- ✅ **Assignment Test Script**: `assignment_test_requests.py` for complete API validation
+- ✅ **Docker Simplified**: Single docker-compose.yml for all environments
+- ✅ **Production Ready**: No development-only dependencies
+
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make changes with tests
-4. Run the test suite
+4. Run the test suite (`pytest` + `python assignment_test_requests.py`)
 5. Submit a pull request
 
 ## License

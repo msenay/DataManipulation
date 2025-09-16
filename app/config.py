@@ -14,7 +14,7 @@ class Settings(BaseModel):
     """Application settings loaded from environment variables."""
     
     # Database
-    database_url: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./dev.db")
+    database_url: str = os.getenv("DATABASE_URL", "postgresql+psycopg://app_user:app_password@localhost:5432/tenant_app")
     
     # Application
     debug: bool = os.getenv("DEBUG", "false").lower() == "true"
@@ -34,11 +34,6 @@ class Settings(BaseModel):
             return v
         except Exception as e:
             raise ValueError(f"Invalid database URL: {e}")
-
-    @property
-    def is_sqlite(self) -> bool:
-        """Check if using SQLite database."""
-        return self.database_url.startswith("sqlite")
 
     @property
     def is_postgresql(self) -> bool:

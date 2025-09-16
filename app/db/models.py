@@ -73,16 +73,6 @@ class Transaction(Base):
         
         # Tenant + product_category index (for category-specific queries)
         Index('ix_transactions_tenant_category', 'tenant_id', 'product_category'),
-        
-        # UUID format validation for SQLite (PostgreSQL handles this natively)
-        CheckConstraint(
-            "length(id) = 36 AND id GLOB '[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]'",
-            name='ck_transaction_id_uuid_format'
-        ),
-        CheckConstraint(
-            "length(tenant_id) = 36 AND tenant_id GLOB '[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]'",
-            name='ck_transaction_tenant_id_uuid_format'
-        ),
     )
 
     def __repr__(self):

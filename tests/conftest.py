@@ -6,7 +6,6 @@ from uuid import UUID
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.pool import StaticPool
 
 from app.db.base import Base
 from app.db.session import AsyncSessionLocal
@@ -17,8 +16,8 @@ TENANT_1 = UUID("123e4567-e89b-12d3-a456-426614174000")
 TENANT_2 = UUID("456e7890-e89b-12d3-a456-426614174001") 
 TENANT_3 = UUID("789e0123-e89b-12d3-a456-426614174002")
 
-# Test database URL (in-memory SQLite)
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+# Test database URL (PostgreSQL test database)
+TEST_DATABASE_URL = "postgresql+psycopg://app_user:app_password@localhost:5432/test_tenant_app"
 
 
 @pytest.fixture(scope="session")
@@ -36,8 +35,6 @@ async def test_engine():
     
     engine = create_async_engine(
         TEST_DATABASE_URL,
-        poolclass=StaticPool,
-        connect_args={"check_same_thread": False},
         echo=False
     )
     
