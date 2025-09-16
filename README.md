@@ -83,12 +83,21 @@ This application implements a comprehensive multi-tenancy strategy:
 - Tenant ID is stored in Python `contextvars` for the request duration
 - Available throughout the request lifecycle via `get_current_tenant()`
 
-### 3. Database Isolation
+### 3. UUID Normalization Policy
+- **Canonical Format**: All UUIDs are normalized to **lowercase RFC-4122 format**
+- **Input Processing**: Mixed case UUIDs in headers are automatically converted to lowercase
+- **Storage**: Database stores UUIDs in normalized lowercase format
+  - SQLite: Stored as TEXT in lowercase (with CHECK constraints for format validation)
+  - PostgreSQL: Uses native UUID type (automatically normalized)
+- **Output**: All API responses return UUIDs in lowercase format
+- **Example**: `123E4567-E89B-12D3-A456-426614174000` → `123e4567-e89b-12d3-a456-426614174000`
+
+### 4. Database Isolation
 - **Read Operations**: Automatic tenant filtering on all queries
 - **Write Operations**: Automatic tenant_id assignment and validation
 - **Cross-tenant Access**: Returns 404 (doesn't leak data existence)
 
-### 4. Event-driven Enforcement
+### 5. Event-driven Enforcement
 - SQLAlchemy event listeners ensure tenant isolation
 - Before flush: validates and sets tenant_id on new records
 - Query execution: applies tenant filters automatically
@@ -207,29 +216,70 @@ Import responses include:
 }
 ```
 
+### Import Idempotency Behavior
+
+**⚠️ Important**: The `/v1/transactions/import` endpoint is **NOT idempotent**.
+
+- **Duplicate Handling**: No automatic duplicate detection - each import creates new transactions
+- **Recommendation**: Implement client-side deduplication before import
+- **Best Practice**: Use unique external IDs in your data and check for existence before import
+- **Future Enhancement**: Consider adding an `Idempotency-Key` header for safe retries
+
+**Example of non-idempotent behavior:**
+```bash
+# First import
+curl -X POST "/v1/transactions/import" -F "file=@data.csv"
+# Returns: {"ingested": 100, "skipped": 0, "errors": []}
+
+# Second import of same file
+curl -X POST "/v1/transactions/import" -F "file=@data.csv"  
+# Returns: {"ingested": 100, "skipped": 0, "errors": []} (creates duplicates!)
+```
+
 ### Analytics & Metrics
 
 #### Overall Summary
 ```bash
+# Default: last 30 days
 GET /v1/metrics/summary
+
+# Custom date range
 GET /v1/metrics/summary?start_ts=2025-01-01T00:00:00Z&end_ts=2025-01-31T23:59:59Z
+
+# Partial date range (30-day window)
+GET /v1/metrics/summary?start_ts=2025-01-01T00:00:00Z
 ```
 
 #### Category Breakdown
 ```bash
+# Default: last 30 days
 GET /v1/metrics/by-category
-GET /v1/metrics/by-category?start_ts=2025-01-01T00:00:00Z
+
+# Custom date range
+GET /v1/metrics/by-category?start_ts=2025-01-01T00:00:00Z&end_ts=2025-01-31T23:59:59Z
 ```
 
 #### User Summary
 ```bash
+# No date filtering (all-time)
 GET /v1/metrics/user/{user_id}
 ```
 
 #### Comprehensive Metrics
 ```bash
+# Default: last 30 days
 GET /v1/metrics
+
+# Custom date range
+GET /v1/metrics?start_ts=2025-01-01T00:00:00Z&end_ts=2025-01-31T23:59:59Z
 ```
+
+### Metrics Date Range Defaults
+
+- **Default Window**: Last 30 days (UTC) when no dates provided
+- **Partial Ranges**: If only start_ts or end_ts provided, creates 30-day window
+- **Validation**: start_ts must be ≤ end_ts (returns 422 if violated)
+- **Timezone**: All timestamps are UTC (ISO 8601 format)
 
 ## Sample Data
 
@@ -271,15 +321,33 @@ This file contains 22 transactions across 3 tenants with various categories and 
 
 ### Standard HTTP Status Codes
 
-| Code | Description | Example |
-|------|-------------|---------|
-| 200 | Success | Transaction retrieved |
-| 201 | Created | Transaction created |
-| 204 | No Content | Transaction deleted |
-| 400 | Bad Request | Missing x-tenant-id header |
-| 404 | Not Found | Transaction not found (including cross-tenant) |
-| 422 | Unprocessable Entity | Invalid UUID format, validation errors |
-| 500 | Internal Server Error | Database errors, unexpected failures |
+| Code | Description | Specific Cases | Example |
+|------|-------------|----------------|---------|
+| 200 | Success | Successful operations | Transaction retrieved |
+| 201 | Created | Resource created | Transaction created |
+| 204 | No Content | Successful deletion | Transaction deleted |
+| 400 | Bad Request | **Missing x-tenant-id header** | `{"detail": "x-tenant-id header is required"}` |
+| 404 | Not Found | **Cross-tenant detail access**, nonexistent resources | `{"detail": "Transaction not found"}` |
+| 422 | Unprocessable Entity | **Invalid GUID format**, tenant mismatches, validation errors, invalid date ranges | `{"detail": "Invalid tenant ID format: badly formed hexadecimal UUID string"}` |
+| 500 | Internal Server Error | Database errors, unexpected failures | `{"detail": "Internal server error"}` |
+
+### Detailed Status Code Rules
+
+#### 400 Bad Request
+- **Missing x-tenant-id header**: All endpoints except `/v1/health` require this header
+- **Invalid request format**: Malformed JSON, missing required request body
+
+#### 404 Not Found  
+- **Cross-tenant detail access**: Accessing transactions/users from different tenants
+- **Nonexistent resources**: Requesting transactions or users that don't exist
+- **Security note**: Returns 404 instead of 403 to avoid leaking resource existence
+
+#### 422 Unprocessable Entity
+- **Invalid GUID format**: Malformed UUID in x-tenant-id header
+- **Tenant ID mismatches**: tenant_id in request body doesn't match header
+- **Validation errors**: Invalid amounts, currencies, date formats
+- **Date range errors**: start_ts > end_ts in metrics endpoints
+- **Business rule violations**: Write-guard tenant validation failures
 
 ### Error Response Format
 

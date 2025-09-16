@@ -3,9 +3,10 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sqlalchemy import Column, DateTime, Index, Numeric, String, Text
+from sqlalchemy import Column, DateTime, Index, Numeric, String, Text, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.types import TypeDecorator, CHAR
+import re
 
 from app.db.base import Base
 
@@ -62,7 +63,7 @@ class Transaction(Base):
     currency = Column(String(3), nullable=False)
     ts = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     
-    # Indexes for efficient querying
+    # Indexes and constraints for efficient querying and data integrity
     __table_args__ = (
         # Primary tenant + timestamp index (most common query pattern)
         Index('ix_transactions_tenant_ts', 'tenant_id', 'ts'),
@@ -72,6 +73,16 @@ class Transaction(Base):
         
         # Tenant + product_category index (for category-specific queries)
         Index('ix_transactions_tenant_category', 'tenant_id', 'product_category'),
+        
+        # UUID format validation for SQLite (PostgreSQL handles this natively)
+        CheckConstraint(
+            "length(id) = 36 AND id GLOB '[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]'",
+            name='ck_transaction_id_uuid_format'
+        ),
+        CheckConstraint(
+            "length(tenant_id) = 36 AND tenant_id GLOB '[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]'",
+            name='ck_transaction_tenant_id_uuid_format'
+        ),
     )
 
     def __repr__(self):

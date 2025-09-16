@@ -33,27 +33,34 @@ async def value_error_exception_handler(request: Request, exc: ValueError) -> JS
     """Handle ValueError exceptions (e.g., from tenant validation)."""
     error_msg = str(exc)
     
-    # Check if it's a tenant-related error
-    if "tenant" in error_msg.lower():
+    # Check if it's a tenant-related error (from write guard or validation)
+    if any(keyword in error_msg.lower() for keyword in ["tenant", "mismatch", "write guard"]):
         status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
         log_level = "warning"
+        detail = f"Tenant validation error: {error_msg}"
+    # Check if it's a date range validation error
+    elif "start_ts" in error_msg and "end_ts" in error_msg:
+        status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+        log_level = "warning"
+        detail = error_msg
     else:
         status_code = status.HTTP_400_BAD_REQUEST
         log_level = "warning"
+        detail = error_msg
     
-    logger.log(
-        getattr(logger, log_level.upper()),
-        "Value error",
+    getattr(logger, log_level)(
+        "Value error handled",
         extra={
             "path": request.url.path,
             "method": request.method,
-            "error": error_msg
+            "error": error_msg,
+            "status_code": status_code
         }
     )
     
     return JSONResponse(
         status_code=status_code,
-        content={"detail": error_msg}
+        content={"detail": detail}
     )
 
 
