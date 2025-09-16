@@ -32,6 +32,8 @@ def event_loop() -> Generator:
 @pytest.fixture(scope="session")
 async def test_engine():
     """Create test database engine."""
+    from app.db import models  # Import to register models
+    
     engine = create_async_engine(
         TEST_DATABASE_URL,
         poolclass=StaticPool,
@@ -52,15 +54,54 @@ async def test_engine():
 @pytest.fixture
 async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
     """Create a fresh database session for each test."""
-    async with AsyncSessionLocal.begin() as session:
+    # Create a fresh connection and transaction for each test
+    connection = await test_engine.connect()
+    transaction = await connection.begin()
+    
+    # Create session bound to this connection
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+    SessionLocal = async_sessionmaker(bind=connection, expire_on_commit=False)
+    
+    async with SessionLocal() as session:
         yield session
-        await session.rollback()
+        
+    # Rollback transaction and close connection
+    await transaction.rollback()
+    await connection.close()
 
 
 @pytest.fixture
-def client() -> TestClient:
-    """Create FastAPI test client."""
-    return TestClient(app)
+def client(test_engine) -> TestClient:
+    """Create FastAPI test client with test database."""
+    from app.db.session import get_db_session
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+    
+    # Create test session maker
+    TestSessionLocal = async_sessionmaker(
+        test_engine,
+        expire_on_commit=False,
+    )
+    
+    async def get_test_db_session():
+        """Override database session for tests."""
+        async with TestSessionLocal() as session:
+            try:
+                yield session
+            except Exception:
+                await session.rollback()
+                raise
+            finally:
+                await session.close()
+    
+    # Override the dependency
+    app.dependency_overrides[get_db_session] = get_test_db_session
+    
+    client = TestClient(app)
+    
+    yield client
+    
+    # Clean up override
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture

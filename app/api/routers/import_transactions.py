@@ -72,7 +72,7 @@ async def import_transactions(
                 "CSV import processed",
                 extra={
                     "tenant_id": str(tenant_id),
-                    "filename": file.filename,
+                    "file_name": file.filename,
                     "ingested": result.ingested,
                     "skipped": result.skipped,
                     "error_count": len(result.errors)

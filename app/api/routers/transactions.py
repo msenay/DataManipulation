@@ -117,7 +117,7 @@ async def update_transaction(
     Returns 404 if not found or doesn't belong to the tenant.
     """
     try:
-        transaction = await transaction_service.update_transaction(transaction_id, data, session)
+        transaction = await transaction_service.update_transaction(transaction_id, data, session, tenant_id)
         if not transaction:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -145,7 +145,7 @@ async def delete_transaction(
     Returns 404 if not found or doesn't belong to the tenant.
     """
     try:
-        deleted = await transaction_service.delete_transaction(transaction_id, session)
+        deleted = await transaction_service.delete_transaction(transaction_id, session, tenant_id)
         if not deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

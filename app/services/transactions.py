@@ -198,7 +198,8 @@ async def get_transaction_by_id(
 async def update_transaction(
     transaction_id: UUID,
     data: TransactionUpdate,
-    session: AsyncSession
+    session: AsyncSession,
+    tenant_id: UUID
 ) -> Optional[TransactionOut]:
     """
     Update a transaction.
@@ -207,16 +208,17 @@ async def update_transaction(
         transaction_id: Transaction ID
         data: Update data
         session: Database session
+        tenant_id: Tenant ID
         
     Returns:
         Updated transaction if found, None otherwise
     """
-    current_tenant = get_current_tenant()
-    if not current_tenant:
-        raise ValueError("No tenant context available")
+    current_tenant = tenant_id
     
-    # Get existing transaction (with tenant filter)
-    query = select(Transaction).where(Transaction.id == transaction_id)
+    # Get existing transaction (with explicit tenant filter)
+    query = select(Transaction).where(
+        and_(Transaction.id == transaction_id, Transaction.tenant_id == current_tenant)
+    )
     result = await session.execute(query)
     transaction = result.scalar_one_or_none()
     
@@ -245,7 +247,8 @@ async def update_transaction(
 
 async def delete_transaction(
     transaction_id: UUID,
-    session: AsyncSession
+    session: AsyncSession,
+    tenant_id: UUID
 ) -> bool:
     """
     Delete a transaction.
@@ -253,16 +256,17 @@ async def delete_transaction(
     Args:
         transaction_id: Transaction ID
         session: Database session
+        tenant_id: Tenant ID
         
     Returns:
         True if deleted, False if not found
     """
-    current_tenant = get_current_tenant()
-    if not current_tenant:
-        raise ValueError("No tenant context available")
+    current_tenant = tenant_id
     
-    # Get existing transaction (with tenant filter)
-    query = select(Transaction).where(Transaction.id == transaction_id)
+    # Get existing transaction (with explicit tenant filter)
+    query = select(Transaction).where(
+        and_(Transaction.id == transaction_id, Transaction.tenant_id == current_tenant)
+    )
     result = await session.execute(query)
     transaction = result.scalar_one_or_none()
     
