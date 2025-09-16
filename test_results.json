@@ -1,0 +1,200 @@
+[
+  {
+    "timestamp": "2025-09-16T20:19:38.669962",
+    "test_name": "Health Check",
+    "method": "GET",
+    "endpoint": "/v1/health",
+    "status_code": 200,
+    "duration_ms": 2.46,
+    "success": true,
+    "error": null,
+    "response_preview": "{'status': 'healthy', 'service': 'fastapi-tenant-app', 'version': '0.1.0'}"
+  },
+  {
+    "timestamp": "2025-09-16T20:19:38.672091",
+    "test_name": "Me Endpoint",
+    "method": "GET",
+    "endpoint": "/v1/me",
+    "status_code": 200,
+    "duration_ms": 2.09,
+    "success": true,
+    "error": null,
+    "response_preview": "{'tenant_id': '123e4567-e89b-12d3-a456-426614174000'}"
+  },
+  {
+    "timestamp": "2025-09-16T20:19:38.684595",
+    "test_name": "Create Transaction",
+    "method": "POST",
+    "endpoint": "/v1/transactions",
+    "status_code": 201,
+    "duration_ms": 12.46,
+    "success": true,
+    "error": null,
+    "response_preview": "{'id': '9c6350ee-c593-4f1f-8f4d-50784acfbaed', 'tenant_id': '123e4567-e89b-12d3-a456-426614174000', 'user_id': 'test_user_001', 'product_category': 'electronics', 'amount': '299.99', 'currency': 'USD'"
+  },
+  {
+    "timestamp": "2025-09-16T20:19:38.688728",
+    "test_name": "List Transactions",
+    "method": "GET",
+    "endpoint": "/v1/transactions",
+    "status_code": 200,
+    "duration_ms": 4.09,
+    "success": true,
+    "error": null,
+    "response_preview": "Found 1 transactions"
+  },
+  {
+    "timestamp": "2025-09-16T20:19:38.692394",
+    "test_name": "Get Transaction by ID",
+    "method": "GET",
+    "endpoint": "/v1/transactions/9c6350ee-c593-4f1f-8f4d-50784acfbaed",
+    "status_code": 200,
+    "duration_ms": 3.62,
+    "success": true,
+    "error": null,
+    "response_preview": "{'id': '9c6350ee-c593-4f1f-8f4d-50784acfbaed', 'tenant_id': '123e4567-e89b-12d3-a456-426614174000', 'user_id': 'test_user_001', 'product_category': 'electronics', 'amount': '299.99', 'currency': 'USD'"
+  },
+  {
+    "timestamp": "2025-09-16T20:19:38.699486",
+    "test_name": "Update Transaction",
+    "method": "PUT",
+    "endpoint": "/v1/transactions/9c6350ee-c593-4f1f-8f4d-50784acfbaed",
+    "status_code": 200,
+    "duration_ms": 7.05,
+    "success": true,
+    "error": null,
+    "response_preview": "{'id': '9c6350ee-c593-4f1f-8f4d-50784acfbaed', 'tenant_id': '123e4567-e89b-12d3-a456-426614174000', 'user_id': 'test_user_001', 'product_category': 'electronics', 'amount': '399.99', 'currency': 'USD'"
+  },
+  {
+    "timestamp": "2025-09-16T20:19:38.703342",
+    "test_name": "Delete Transaction",
+    "method": "DELETE",
+    "endpoint": "/v1/transactions/9c6350ee-c593-4f1f-8f4d-50784acfbaed",
+    "status_code": 204,
+    "duration_ms": 3.82,
+    "success": true,
+    "error": null,
+    "response_preview": "Transaction deleted"
+  },
+  {
+    "timestamp": "2025-09-16T20:19:38.710423",
+    "test_name": "Import Transactions (CSV)",
+    "method": "POST",
+    "endpoint": "/v1/transactions/import",
+    "status_code": 200,
+    "duration_ms": 7.04,
+    "success": true,
+    "error": null,
+    "response_preview": "{'ingested': 3, 'skipped': 0, 'errors': []}"
+  },
+  {
+    "timestamp": "2025-09-16T20:19:38.712558",
+    "test_name": "Import Transactions (JSON)",
+    "method": "POST",
+    "endpoint": "/v1/transactions/import",
+    "status_code": 400,
+    "duration_ms": 2.11,
+    "success": false,
+    "error": null,
+    "response_preview": null
+  },
+  {
+    "timestamp": "2025-09-16T20:19:38.717460",
+    "test_name": "Metrics Summary",
+    "method": "GET",
+    "endpoint": "/v1/metrics/summary",
+    "status_code": 200,
+    "duration_ms": 4.87,
+    "success": true,
+    "error": null,
+    "response_preview": "{'total_count': 0, 'total_amount': '0.00', 'average_amount': None, 'currency': 'USD'}"
+  },
+  {
+    "timestamp": "2025-09-16T20:19:38.722232",
+    "test_name": "Metrics by Category",
+    "method": "GET",
+    "endpoint": "/v1/metrics/by-category",
+    "status_code": 200,
+    "duration_ms": 4.73,
+    "success": true,
+    "error": null,
+    "response_preview": null
+  },
+  {
+    "timestamp": "2025-09-16T20:19:38.726874",
+    "test_name": "User Metrics",
+    "method": "GET",
+    "endpoint": "/v1/metrics/user/json_user_001",
+    "status_code": 404,
+    "duration_ms": 4.61,
+    "success": false,
+    "error": null,
+    "response_preview": null
+  },
+  {
+    "timestamp": "2025-09-16T20:19:38.732249",
+    "test_name": "Comprehensive Metrics",
+    "method": "GET",
+    "endpoint": "/v1/metrics",
+    "status_code": 200,
+    "duration_ms": 5.33,
+    "success": true,
+    "error": null,
+    "response_preview": "{'tenant_id': '123e4567-e89b-12d3-a456-426614174000', 'overall': {'total_count': 0, 'total_amount': '0.00', 'average_amount': None, 'currency': 'USD'}, 'by_category': [], 'by_user': []}"
+  },
+  {
+    "timestamp": "2025-09-16T20:19:38.737359",
+    "test_name": "Create Transaction (Tenant 1)",
+    "method": "POST",
+    "endpoint": "/v1/transactions",
+    "status_code": 201,
+    "duration_ms": 5.07,
+    "success": true,
+    "error": null,
+    "response_preview": "{'id': '78d054c2-d3e6-4fda-9e57-3e9b21d43373', 'tenant_id': '123e4567-e89b-12d3-a456-426614174000', 'user_id': 'tenant1_user', 'product_category': 'electronics', 'amount': '299.99', 'currency': 'USD',"
+  },
+  {
+    "timestamp": "2025-09-16T20:19:38.740486",
+    "test_name": "List Transactions (Tenant 2)",
+    "method": "GET",
+    "endpoint": "/v1/transactions",
+    "status_code": 200,
+    "duration_ms": 3.09,
+    "success": true,
+    "error": null,
+    "response_preview": "Found 0 transactions (should be isolated)"
+  },
+  {
+    "timestamp": "2025-09-16T20:19:38.741685",
+    "test_name": "Missing Tenant Header",
+    "method": "GET",
+    "endpoint": "/v1/transactions",
+    "status_code": 400,
+    "duration_ms": 1.17,
+    "success": false,
+    "error": null,
+    "response_preview": "Should return 400"
+  },
+  {
+    "timestamp": "2025-09-16T20:19:38.743157",
+    "test_name": "Invalid Tenant Header",
+    "method": "GET",
+    "endpoint": "/v1/transactions",
+    "status_code": 422,
+    "duration_ms": 1.45,
+    "success": false,
+    "error": null,
+    "response_preview": "Should return 422"
+  },
+  {
+    "timestamp": "2025-09-16T20:19:38.745295",
+    "test_name": "Invalid Transaction Data",
+    "method": "POST",
+    "endpoint": "/v1/transactions",
+    "status_code": 422,
+    "duration_ms": 2.1,
+    "success": false,
+    "error": null,
+    "response_preview": "Should return 422"
+  }
+]
