@@ -19,7 +19,7 @@ A production-ready FastAPI application with comprehensive multi-tenancy support 
 ### Prerequisites
 
 - Python 3.11+
-- SQLite (default) or PostgreSQL
+- PostgreSQL
 
 ### Installation
 
@@ -56,7 +56,7 @@ Create a `.env` file with the following variables:
 
 ```env
 # Database Configuration
-DATABASE_URL=sqlite+aiosqlite:///./dev.db
+DATABASE_URL=postgresql+psycopg://app_user:app_password@localhost:5432/tenant_app
 # For PostgreSQL: DATABASE_URL=postgresql+psycopg://user:password@localhost/dbname
 
 # Application Settings
@@ -66,7 +66,6 @@ LOG_LEVEL=INFO
 
 ### Database URL Notes
 
-- **SQLite**: `sqlite+aiosqlite:///./dev.db` (default, file-based)
 - **PostgreSQL**: `postgresql+psycopg://user:password@localhost:5432/dbname`
 
 ## Multi-Tenancy Strategy
@@ -87,7 +86,6 @@ This application implements a comprehensive multi-tenancy strategy:
 - **Canonical Format**: All UUIDs are normalized to **lowercase RFC-4122 format**
 - **Input Processing**: Mixed case UUIDs in headers are automatically converted to lowercase
 - **Storage**: Database stores UUIDs in normalized lowercase format
-  - SQLite: Stored as TEXT in lowercase (with CHECK constraints for format validation)
   - PostgreSQL: Uses native UUID type (automatically normalized)
 - **Output**: All API responses return UUIDs in lowercase format
 - **Example**: `123E4567-E89B-12D3-A456-426614174000` → `123e4567-e89b-12d3-a456-426614174000`
@@ -492,7 +490,7 @@ docker-compose -f docker-compose.prod.yml down
 # Build image
 docker build -t fastapi-tenant-app .
 
-# Run with SQLite (development)
+# Run with PostgreSQL (development)
 docker run -p 8000:8000 fastapi-tenant-app
 
 # Run with PostgreSQL (production)
